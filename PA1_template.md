@@ -1,9 +1,4 @@
----
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
----
+# Reproducible Research: Peer Assessment 1
 
 ## Introduction
 
@@ -45,13 +40,15 @@ Show any code that is needed to
 
 1. Load the data (i.e. read.csv())
 
-```{r}
+
+```r
 activityfile <- read.csv("activity.csv")
 ```
 
 2. Process/transform the data (if necessary) into a format suitable for your analysis
 
-```{r}
+
+```r
 activityfile$asDate <- as.Date(activityfile$date, "%Y-%m-%d")
 library(data.table)
 dt = as.data.table(activityfile)
@@ -63,7 +60,8 @@ For this part of the assignment, you can ignore the missing values in the datase
 
 1. Calculate the total number of steps taken per day
 
-```{r}
+
+```r
 dt.total<-dt[, list(steps_total=sum(steps, na.rm = TRUE)), by=asDate]
 ```
 
@@ -71,37 +69,58 @@ dt.total<-dt[, list(steps_total=sum(steps, na.rm = TRUE)), by=asDate]
 
 This is a barplot of total steps:
 
-```{r}
+
+```r
 barplot(dt.total$steps_total)
 ```
 
+![](PA1_template_files/figure-html/unnamed-chunk-4-1.png) 
+
 This is a histogram of total steps broken into 10 buckets:
 
-```{r}
+
+```r
 hist(x=dt.total$steps_total, breaks=10, main="Histogram of Total Steps Per Day", xlab="Total Steps Per Day")
 ```
+
+![](PA1_template_files/figure-html/unnamed-chunk-5-1.png) 
 
 
 3. Calculate and report the mean and median of the total number of steps taken per day
 
-```{r}
+
+```r
 dt.total[, list(steps_median = median(as.double(steps_total), na.rm = TRUE), 
                 steps_mean= mean(steps_total, na.rm = TRUE))]
+```
+
+```
+##    steps_median steps_mean
+## 1:        10395    9354.23
 ```
 
 ## What is the average daily activity pattern?
 
 1. Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
 
-```{r}
+
+```r
 dt.interval<-dt[, list(steps_mean=mean(steps, na.rm = TRUE)), by=interval]
 with(dt.interval, plot(x=interval, y=steps_mean, type = "l"))
 ```
 
+![](PA1_template_files/figure-html/unnamed-chunk-7-1.png) 
+
 2. Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
 
-```{r}
+
+```r
 dt.interval[steps_mean==max(dt.interval$steps_mean),]
+```
+
+```
+##    interval steps_mean
+## 1:      835   206.1698
 ```
 
 ## Imputing missing values
@@ -110,22 +129,36 @@ Note that there are a number of days/intervals where there are missing values (c
 
 1. Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with NAs)
 
-```{r}
+
+```r
 dt[is.na(dt$steps),.N] # use the .N with is.na for steps.
+```
+
+```
+## [1] 2304
 ```
 
 2. Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be sophisticated. For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.
 
-```{r}
+
+```r
 # First verify that the mean of each 5-minute interval is not NA, then use the 
 # rounded 5-minute interval means to populate the NA steps as integers.
 dt.interval[is.na(dt.interval$steps_mean),]
+```
+
+```
+## Empty data.table (0 rows) of 2 cols: interval,steps_mean
+```
+
+```r
 dt.new <- copy(dt)
 ```
 
 3. Create a new dataset that is equal to the original dataset but with the missing data filled in.
 
-```{r}
+
+```r
 setkey(dt.new, interval)
 setkey(dt.interval, interval)
 dt.new[is.na(steps), steps := dt.interval[.(.SD), as.integer(round(steps_mean,0))]]
@@ -134,15 +167,24 @@ dt.new[is.na(steps), steps := dt.interval[.(.SD), as.integer(round(steps_mean,0)
 4. Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
 
 We total steps by day in the imputed value data table and see the histogram shifting to the right, giving a more normal distribution. The frequencies also see an increase near the center of the distribution here.
-```{r}
+
+```r
 dt.totals<-dt.new[, list(steps_total=sum(steps, na.rm = TRUE)), by=asDate]
 hist(x=dt.totals$steps_total, breaks=10, main="Histogram of Total Steps Per Day - Imputing", xlab="Total Steps Per Day - Imputing")
 ```
 
+![](PA1_template_files/figure-html/unnamed-chunk-12-1.png) 
+
 We also see steps by day in the imputed value data table having an increase in mean and median. If we replace missing data with mean values, the totals will increase.
-```{r}
+
+```r
 dt.totals[, list(steps_median = median(as.double(steps_total), na.rm = TRUE), 
                  steps_mean= mean(steps_total, na.rm = TRUE))]
+```
+
+```
+##    steps_median steps_mean
+## 1:        10762   10765.64
 ```
 
 ## Are there differences in activity patterns between weekdays and weekends?
@@ -150,7 +192,8 @@ dt.totals[, list(steps_median = median(as.double(steps_total), na.rm = TRUE),
 1. For this part the weekdays() function may be of some help here. Use the dataset with the filled-in missing values for this part.
 
 I copy the dataset and add a new field that will become my factor once I split it into weekend and weekday. I initially populate with "weekday" since there are only two weekend days to be used in criteria below.
-```{r}
+
+```r
 dt.daysplit <- copy(dt.new)
 dt.daysplit[,daytype:="weekday"]
 ```
@@ -158,20 +201,24 @@ dt.daysplit[,daytype:="weekday"]
 2. Create a new factor variable in the dataset with two levels - "weekday" and "weekend" indicating whether a given date is a weekday or weekend day.
 
 Now use the weekdays function on the date field to find the weekend days.
-```{r}
+
+```r
 dt.daysplit[weekdays(asDate)=="Saturday" | weekdays(asDate)=="Sunday", daytype:="weekend"]
 dt.daysplit$daytype <- as.factor(dt.daysplit$daytype)
 ```
 
 3. Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). See the README file in the GitHub repository to see an example of what this plot should look like using simulated data.
 
-```{r}
+
+```r
 dt.intervalsplit<-dt.daysplit[, list(steps_mean=mean(steps, na.rm = TRUE)), by=.(interval, daytype)]
 par(mfrow=c(2,1))
 with(dt.intervalsplit[dt.intervalsplit$daytype=="weekend",], plot(x=interval, y=steps_mean, type = "l", main="weekend", xlab="", ylab="", xaxt="n", ylim=c(-5,250)))
 
 with(dt.intervalsplit[dt.intervalsplit$daytype=="weekday",], plot(x=interval, y=steps_mean, type = "l", main="weekday", xlab = "", ylab = "", ylim=c(-5,250)))
 ```
+
+![](PA1_template_files/figure-html/unnamed-chunk-16-1.png) 
 
 
 
